@@ -1,57 +1,16 @@
 import type { NextRequest } from "next/server";
 import OpenAI from "openai";
 
-// 生成多個不同的提示詞變體
-function generatePromptVariations(basePrompt: string, count: number): string[] {
-  const variations: string[] = [];
-  const styles = [
-    "cinematic lighting, dramatic shadows",
-    "soft natural lighting, warm tones",
-    "harsh dramatic lighting, high contrast",
-    "golden hour lighting, warm atmosphere",
-    "cool blue lighting, mysterious mood",
-    "vibrant colorful lighting, energetic",
-    "minimalist lighting, clean composition",
-    "moody lighting, dark atmosphere",
-    "bright studio lighting, professional",
-    "atmospheric lighting, ethereal mood",
-  ];
-
-  const compositions = [
-    "close-up shot, detailed focus",
-    "wide angle shot, expansive view",
-    "low angle shot, powerful perspective",
-    "high angle shot, overview perspective",
-    "side profile shot, elegant angle",
-    "three-quarter view, dynamic angle",
-    "bird's eye view, unique perspective",
-    "macro shot, extreme detail",
-    "panoramic view, sweeping composition",
-    "intimate shot, personal perspective",
-  ];
-
-  for (let i = 0; i < count; i++) {
-    const style = styles[i % styles.length];
-    const composition = compositions[i % compositions.length];
-    const variation = `${basePrompt}, ${style}, ${composition}, high quality, detailed, professional photography`;
-    variations.push(variation);
-  }
-
-  return variations;
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      model = "dall-e-3",
       prompt,
       width,
       height,
       n = 1,
       style_weight = 0.6,
       seed,
-      references = [],
       apiKey,
     } = body;
 
@@ -59,7 +18,7 @@ export async function POST(request: NextRequest) {
     if (!apiKey || apiKey.trim() === "") {
       // 沒有 API Key 時返回模擬數據
       console.log("No API Key provided, using mock data");
-      const mockImages = Array.from({ length: n }, (_, i) => {
+      const mockImages = Array.from({ length: n }, () => {
         const bgHue =
           Math.abs(
             [...(prompt || "mock")]?.reduce(
@@ -134,7 +93,7 @@ export async function POST(request: NextRequest) {
       console.error("OpenAI API Error:", openaiError);
 
       // 如果 DALL-E 3 調用失敗，回退到模擬模式
-      const mockImages = Array.from({ length: n }, (_, i) => {
+      const mockImages = Array.from({ length: n }, () => {
         const bgHue =
           Math.abs(
             [...(prompt || "mock")]?.reduce(

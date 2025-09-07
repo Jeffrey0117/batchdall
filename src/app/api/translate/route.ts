@@ -2,9 +2,12 @@ import type { NextRequest } from 'next/server';
 import OpenAI from 'openai';
 
 export async function POST(request: NextRequest) {
+  let text = '';
+  
   try {
     const body = await request.json();
-    const { text, target, apiKey } = body;
+    const { text: inputText, target, apiKey } = body;
+    text = inputText;
 
     if (!apiKey || !text) {
       return Response.json({ error: "Missing API key or text" }, { status: 400 });

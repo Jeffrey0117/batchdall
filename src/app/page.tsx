@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import JSZip from "jszip";
 
 // ---------- 型別定義 ----------
@@ -10,18 +11,6 @@ type BatchItem = {
   selected: boolean;
   prompt?: string;
 };
-type HistoryItem = {
-  id: string;
-  time: number;
-  prompt: string;
-  width: number;
-  height: number;
-  count: number;
-  seed: number;
-  styleWeight: number;
-  items: string[];
-};
-type EditMode = "outpaint" | "inpaint" | "variation" | null;
 
 // ---------- 工具函數 ----------
 const uid = () => Math.random().toString(36).substring(2);
@@ -77,12 +66,11 @@ export default function App() {
   ]);
   const [width, setWidth] = useState(1024);
   const [height, setHeight] = useState(1024);
-  const [count, setCount] = useState(4);
   const [seed, setSeed] = useState(7);
-  const [styleWeight, setStyleWeight] = useState(0.6);
+  const [styleWeight] = useState(0.6);
 
   // 新增狀態
-  const [promptTemplates, setPromptTemplates] = useState([
+  const [promptTemplates] = useState([
     {
       id: 1,
       name: "風景攝影",
@@ -115,29 +103,28 @@ export default function App() {
     },
   ]);
   const [promptHistory, setPromptHistory] = useState<string[]>([]);
-  const [queue, setQueue] = useState<any[]>([]);
+  const [queue, setQueue] = useState<{
+    id: string;
+    prompt: string;
+    width: number;
+    height: number;
+    styleWeight: number;
+    seed: number;
+    refs: string[];
+  }[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentProgress, setCurrentProgress] = useState({
     current: 0,
     total: 0,
     currentPrompt: "",
   });
-  const [refs, setRefs] = useState<File[]>([]);
+  const [refs] = useState<File[]>([]);
   const [batch, setBatch] = useState<BatchItem[]>([]);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [running, setRunning] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
-  const [cancelFlag, setCancelFlag] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // 圖像編輯相關狀態
-  const [editingImage, setEditingImage] = useState<string | null>(null);
-  const [editMode, setEditMode] = useState<EditMode>(null);
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    imageId: string;
-  } | null>(null);
   const [editPrompt, setEditPrompt] = useState<string>("");
   const [showEditDialog, setShowEditDialog] = useState<boolean>(false);
   const [selectedImageForEdit, setSelectedImageForEdit] = useState<{
@@ -161,7 +148,7 @@ export default function App() {
         setPromptHistory(JSON.parse(savedHistory));
       }
     }
-  }, []);
+  }, [apiKey]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && apiKey) {
@@ -296,24 +283,6 @@ export default function App() {
     setQueue([]);
     setIsProcessing(false);
     setCurrentProgress({ current: 0, total: 0, currentPrompt: "" });
-
-    // 保存到歷史
-    if (results.length > 0) {
-      setHistory((prev) => [
-        {
-          id: uid(),
-          time: Date.now(),
-          prompt: queue.map((q) => q.prompt).join(" | "),
-          width,
-          height,
-          count: results.length,
-          seed,
-          styleWeight,
-          items: results.slice(0, 4),
-        },
-        ...prev,
-      ]);
-    }
   };
 
   // ---------- 函數 ----------
@@ -324,7 +293,6 @@ export default function App() {
   const generateImages = async () => {
     if (running || isProcessing) return;
     setRunning(true);
-    setCancelFlag(false);
     setBatch([]);
     setLogs([]);
     addLog("開始生成圖像...");
@@ -427,11 +395,6 @@ export default function App() {
       a.click();
       URL.revokeObjectURL(url);
     }
-  };
-
-  const clearHistory = () => {
-    setHistory([]);
-    addLog("歷史記錄已清空");
   };
 
   // 圖像編輯函數
@@ -945,9 +908,11 @@ export default function App() {
                   key={item.id}
                   className="relative group bg-gray-700/30 rounded-xl overflow-hidden border border-gray-600 hover:border-gray-500 transition-all"
                 >
-                  <img
+                  <Image
                     src={item.url}
                     alt="Generated"
+                    width={256}
+                    height={224}
                     className="w-full h-56 object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
                     onClick={() => setLightboxImage(item.url)}
                   />
@@ -1021,9 +986,11 @@ export default function App() {
           onClick={() => setLightboxImage(null)}
         >
           <div className="relative max-w-5xl max-h-full">
-            <img
+            <Image
               src={lightboxImage}
               alt="Lightbox"
+              width={1024}
+              height={1024}
               className="max-w-full max-h-full object-contain rounded-lg"
             />
             <button
@@ -1072,9 +1039,11 @@ export default function App() {
                     原始圖像
                   </h4>
                   <div className="relative bg-gray-700 rounded-xl overflow-hidden">
-                    <img
+                    <Image
                       src={selectedImageForEdit.url}
                       alt="Original"
+                      width={400}
+                      height={256}
                       className="w-full h-64 object-cover"
                     />
                   </div>
