@@ -342,7 +342,7 @@ export default function App() {
 
     try {
       // 處理批量模式：如果只有一個提示詞但包含換行，則按行分割
-      let allPrompts: string[] = [];
+      const allPrompts: string[] = [];
       prompts.forEach((p) => {
         if (p.includes("\n")) {
           // 批量模式：按行分割
